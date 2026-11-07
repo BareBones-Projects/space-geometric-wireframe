@@ -1,0 +1,118 @@
+<!doctype html>
+<!-- BareBones Project | space-geometric-wireframe | Copyright (c) 2026 BareBones Project -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#05070b">
+<meta name="description" content="BareBones Project interactive 4D geometric wireframe visualization.">
+<title>space-geometric-wireframe | BareBones Project</title>
+<style>
+/* BareBones Project | Standalone wireframe styles */
+:root{color-scheme:dark;font-family:ui-monospace,SFMono-Regular,Consolas,monospace}
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#05070b;color:#cce9f2}
+canvas{display:block;width:100%;height:100%;touch-action:none}
+.hud{position:fixed;left:24px;top:23px;pointer-events:none}
+.eyebrow{font-size:10px;letter-spacing:.35em;color:#4c7e8a}
+.title{font-size:15px;letter-spacing:.14em;margin-top:9px;font-weight:500;max-width:min(700px,75vw);overflow-wrap:anywhere}
+.sub{font-size:10px;letter-spacing:.15em;color:#658b96;margin-top:8px}
+.controls{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:15px;background:#09131bcc;border:1px solid #25404a;border-radius:10px;padding:12px 16px;backdrop-filter:blur(12px);max-width:calc(100vw - 24px)}
+button{border:1px solid #3d6671;background:#0d2730;color:#c7faff;padding:8px 12px;border-radius:5px;font:inherit;font-size:11px;cursor:pointer}
+button:hover{background:#18414b}button:focus-visible,input:focus-visible{outline:2px solid #78e9ff;outline-offset:3px}
+label{display:flex;align-items:center;gap:9px;font-size:10px;white-space:nowrap;color:#83a8b3}
+input[type=range]{width:105px;accent-color:#78e9ff}
+.signature{position:fixed;right:24px;bottom:22px;font-size:10px;letter-spacing:.16em;color:#577c87;pointer-events:none}
+.corner{position:fixed;right:24px;top:27px;color:#577c87;font-size:10px;letter-spacing:.12em;text-align:right;line-height:1.8;pointer-events:none}
+@media(max-width:550px){.signature{right:12px;bottom:88px;font-size:9px}.hud{left:16px;top:16px}.corner{right:16px;top:17px}.controls{gap:9px;padding:10px}input[type=range]{width:65px}.sub{max-width:180px}.title{font-size:12px;max-width:68vw}}
+</style>
+</head>
+<body>
+<canvas id="scene" aria-label="Animated four-dimensional geometric wireframe"></canvas>
+<div class="hud"><div class="eyebrow">GEOMETRIC STUDY / 001</div><div class="title">SPACE GEOMETRIC WIREFRAME</div><div class="sub">4D PROJECTION · REAL-TIME WIREFRAME</div></div>
+<div class="corner">SPATIAL / 04<br>LIVE RENDER</div>
+<div class="signature" aria-label="BareBones Project signature">BareBones Project</div>
+<div class="controls" role="group" aria-label="Animation controls">
+<button id="pause" type="button" aria-pressed="false">PAUSE</button>
+<label for="speed">SPEED <input id="speed" type="range" min="0" max="3" step="0.05" value="1"></label>
+<button id="reset" type="button">RESET</button>
+</div>
+<script>
+/* BareBones Project | Interactive 4D wireframe animation */
+"use strict";
+const canvas=document.querySelector("#scene");
+const ctx=canvas.getContext("2d",{alpha:false});
+if(!ctx)throw new Error("2D Canvas is unavailable");
+let w=0,h=0,dpr=1,t=0,last=0,paused=false,speed=1,dragging=false,lastX=0,lastY=0,manualX=0,manualY=0;
+const verts=Array.from({length:16},(_,i)=>[0,1,2,3].map(bit=>(i>>bit&1)?1:-1));
+const edges=[];
+for(let i=0;i<16;i++)for(let j=i+1;j<16;j++)if(((i^j)&((i^j)-1))===0)edges.push([i,j]);
+function resize(){
+ dpr=Math.min(window.devicePixelRatio||1,2);
+ w=Math.max(1,window.innerWidth);h=Math.max(1,window.innerHeight);
+ canvas.width=Math.round(w*dpr);canvas.height=Math.round(h*dpr);
+ ctx.setTransform(dpr,0,0,dpr,0,0);
+}
+window.addEventListener("resize",resize);resize();
+function project(v){
+ let a=v.slice();
+ for(const [i,j,angle] of [[0,3,t*.31],[1,2,t*.24],[0,2,t*.16],[1,3,t*.13]]){
+   const next=a.slice(),c=Math.cos(angle),s=Math.sin(angle);
+   next[i]=a[i]*c-a[j]*s;next[j]=a[i]*s+a[j]*c;a=next;
+ }
+ const four=3.6/(3.6-a[3]),x=a[0]*four,y=a[1]*four,z=a[2]*four;
+ const ax=t*.12+manualX,ay=t*.17+manualY;
+ const xx=x*Math.cos(ax)-z*Math.sin(ax);
+ let zz=x*Math.sin(ax)+z*Math.cos(ax);
+ const yy=y*Math.cos(ay)-zz*Math.sin(ay);
+ zz=y*Math.sin(ay)+zz*Math.cos(ay);
+ const depth=5.5/(5.5-zz),scale=Math.min(w,h)*.19;
+ return{x:w/2+xx*depth*scale,y:h/2+yy*depth*scale,z:zz,alpha:Math.max(.2,Math.min(1,(zz+3)/6))};
+}
+function draw(ms){
+ const dt=last?Math.min(Math.max((ms-last)/1000,0),.05):0;last=ms;
+ if(!paused)t+=dt*speed;
+ ctx.fillStyle="#05070b";ctx.fillRect(0,0,w,h);
+ const cx=w/2,cy=h/2;
+ const glow=ctx.createRadialGradient(cx,cy,10,cx,cy,Math.max(w,h)*.55);
+ glow.addColorStop(0,"#0c1b27");glow.addColorStop(1,"#05070b");
+ ctx.fillStyle=glow;ctx.fillRect(0,0,w,h);
+ ctx.lineWidth=.5;ctx.strokeStyle="rgba(92,156,178,.07)";
+ const step=48;
+ for(let x=cx%step;x<w;x+=step){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,h);ctx.stroke()}
+ for(let y=cy%step;y<h;y+=step){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(w,y);ctx.stroke()}
+ const projected=verts.map(project);
+ ctx.save();ctx.shadowColor="#65d9fa";ctx.shadowBlur=13;
+ for(const [i,j] of edges){
+  const a=projected[i],b=projected[j],alpha=(a.alpha+b.alpha)/2;
+  ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);
+  ctx.lineWidth=1.25;ctx.strokeStyle=`rgba(117,225,255,${.3+.65*alpha})`;ctx.stroke();
+ }
+ ctx.restore();
+ for(const p of projected){ctx.beginPath();ctx.arc(p.x,p.y,2.2,0,Math.PI*2);ctx.fillStyle=`rgba(215,250,255,${.45+.55*p.alpha})`;ctx.fill()}
+ ctx.strokeStyle="rgba(111,210,234,.22)";ctx.lineWidth=1;
+ const r=Math.min(w,h)*.33;
+ for(const side of [-1,1]){ctx.beginPath();ctx.arc(cx,cy,r,side===1?0:Math.PI,side===1?.16:Math.PI+.16);ctx.stroke()}
+ requestAnimationFrame(draw);
+}
+requestAnimationFrame(draw);
+const pauseButton=document.querySelector("#pause");
+const speedSlider=document.querySelector("#speed");
+pauseButton.addEventListener("click",()=>{
+ paused=!paused;pauseButton.textContent=paused?"RESUME":"PAUSE";
+ pauseButton.setAttribute("aria-pressed",String(paused));
+});
+speedSlider.addEventListener("input",()=>{speed=Number(speedSlider.value)});
+document.querySelector("#reset").addEventListener("click",()=>{
+ t=0;manualX=0;manualY=0;speed=1;speedSlider.value="1";
+});
+canvas.addEventListener("pointerdown",e=>{
+ dragging=true;lastX=e.clientX;lastY=e.clientY;canvas.setPointerCapture(e.pointerId);
+});
+canvas.addEventListener("pointermove",e=>{
+ if(!dragging)return;
+ manualX+=(e.clientX-lastX)*.007;manualY+=(e.clientY-lastY)*.007;
+ lastX=e.clientX;lastY=e.clientY;
+});
+for(const name of ["pointerup","pointercancel","lostpointercapture"])canvas.addEventListener(name,()=>{dragging=false});
+</script>
+</body></html>
