@@ -1,0 +1,7 @@
+# BareBones Project | Local build and test exclusions
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.playwright/
+node_modules/
+.DS_Store
