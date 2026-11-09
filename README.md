@@ -1,3 +1,5 @@
+![space-geometric-wireframe social preview](assets/social-preview.svg)
+
 <!-- BareBones Project | Project documentation -->
 # space-geometric-wireframe
 
@@ -87,3 +89,7 @@ GitHub organization: [BareBones-Projects](https://github.com/BareBones-Projects)
 Project: [space-geometric-wireframe](https://github.com/BareBones-Projects/space-geometric-wireframe)
 
 © 2026 BareBones Project. See [LICENSE](LICENSE) for the terms.
+
+
+---
+BareBones Projects, Designed by: Justin Levesque-Welsch
